@@ -34,11 +34,10 @@ def heur_manhattan_distance(state):
     manhattan_distance = 0
     for box in state.boxes:
       min_dis = float("inf")
-      if box not in state.storage:
-          for storage in state.storage:
-            cur_dis = abs(box[0] - storage[0]) + abs(box[1] - storage[1])
-            if cur_dis < min_dis:
-              min_dis = cur_dis
+      for storage in state.storage:
+        cur_dis = abs(box[0] - storage[0]) + abs(box[1] - storage[1])
+        if cur_dis < min_dis:
+          min_dis = cur_dis
       manhattan_distance += min_dis
     return manhattan_distance
 
@@ -54,6 +53,25 @@ def trivial_heuristic(state):
         count += 1
   return count
 
+# Deadlock: the box is in unsolvable position
+def heur_deadlock(state):
+  unstored_box = list(state.boxes - state.storage)
+  unboxed_storage = list(state.storage - state.boxes)
+  for box in unstored_box:
+    # Corner: formed by wall
+    if box in [(0, 0), (0, state.height - 1), (state.width - 1, 0), (state.width - 1, state.height - 1)]:
+      return float("inf")
+    # Corner: formed by obstacles
+    if ((box[0] - 1, box[1]) in state.obstacles or (box[0] + 1, box[1]) in state.obstacles) and \
+      ((box[0], box[1] - 1) in state.obstacles or (box[0], box[1] + 1) in state.obstacles):
+      return float("inf")
+    # Edge: no storage along the chosen edge
+    if (box[0] == 0 or box[0] == state.width - 1) and (not any(box[0] == storage[0] for storage in unboxed_storage)):
+      return float("inf")
+    if (box[1] == 0 or box[1] == state.height - 1) and (not any(box[1] == storage[1] for storage in unboxed_storage)):
+      return float("inf")
+  return 0
+
 def heur_alternate(state):
 #IMPLEMENT
     '''a better heuristic'''
@@ -62,7 +80,7 @@ def heur_alternate(state):
     #heur_manhattan_distance has flaws.
     #Write a heuristic function that improves upon heur_manhattan_distance to estimate distance between the current state and the goal.
     #Your function should return a numeric value for the estimate of the distance to the goal.
-    return heur_manhattan_distance(state)
+    return max(trivial_heuristic(state), heur_deadlock(state))
 
 def heur_zero(state):
     '''Zero Heuristic can be used to make A* search perform uniform cost search'''

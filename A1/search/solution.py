@@ -6,6 +6,7 @@
 #   You may not remove any imports.
 #   You may not import or otherwise source any of your own files
 
+import math
 import os #for time functions
 from search import * #for search engines
 from sokoban import SokobanState, Direction, PROBLEMS #for Sokoban specific classes and problems
@@ -30,7 +31,16 @@ def heur_manhattan_distance(state):
     #When calculating distances, assume there are no obstacles on the grid.
     #You should implement this heuristic function exactly, even if it is tempting to improve it.
     #Your function should return a numeric value; this is the estimate of the distance to the goal.
-    return 0
+    manhattan_distance = 0
+    for box in state.boxes:
+      min_dis = float("inf")
+      if box not in state.storage:
+          for storage in state.storage:
+            cur_dis = abs(box[0] - storage[0]) + abs(box[1] - storage[1])
+            if cur_dis < min_dis:
+              min_dis = cur_dis
+      manhattan_distance += min_dis
+    return manhattan_distance
 
 
 #SOKOBAN HEURISTICS

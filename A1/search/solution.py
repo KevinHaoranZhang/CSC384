@@ -66,7 +66,7 @@ def heur_alternate(state):
 
 def heur_zero(state):
     '''Zero Heuristic can be used to make A* search perform uniform cost search'''
-    return 0
+    return heur_manhattan_distance(state)
 
 def fval_function(sN, weight):
 #IMPLEMENT
@@ -103,4 +103,19 @@ def anytime_gbfs(initial_state, heur_fn, timebound = 10):
   '''INPUT: a sokoban state that represents the start state and a timebound (number of seconds)'''
   '''OUTPUT: A goal state (if a goal is found), else False'''
   '''implementation of anytime greedy best-first search'''
-  return False
+  # Initialize search engine
+  search_engine = SearchEngine("best_first", "default");
+  search_engine.init_search(initState=initial_state, goal_fn=sokoban_goal_state, heur_fn=heur_fn)
+  # Set return value
+  result_state = None
+  cost_bound = None
+  end_time = os.times()[0] + timebound
+  # Continue searching before time limit is reached
+  while os.times()[0] < end_time:
+    goal_state = search_engine.search(timebound=(end_time - os.times()[0]), costbound=cost_bound)[0]
+    if goal_state == False:
+      break
+    result_state = goal_state
+    # Update cost bound
+    cost_bound = (goal_state.gval, float("inf"), float("inf"))
+  return result_state

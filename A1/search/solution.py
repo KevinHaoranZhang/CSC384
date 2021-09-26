@@ -62,11 +62,11 @@ def heur_alternate(state):
     #heur_manhattan_distance has flaws.
     #Write a heuristic function that improves upon heur_manhattan_distance to estimate distance between the current state and the goal.
     #Your function should return a numeric value for the estimate of the distance to the goal.
-    return 0
+    return heur_manhattan_distance(state)
 
 def heur_zero(state):
     '''Zero Heuristic can be used to make A* search perform uniform cost search'''
-    return heur_manhattan_distance(state)
+    return 0
 
 def fval_function(sN, weight):
 #IMPLEMENT
@@ -86,7 +86,7 @@ def fval_function(sN, weight):
     #The function must return a numeric f-value.
     #The value will determine your state's position on the Frontier list during a 'custom' search.
     #You must initialize your search engine object as a 'custom' search engine if you supply a custom fval function.
-    return 0
+    return sN.gval + weight * sN.hval
 
 def anytime_weighted_astar(initial_state, heur_fn, weight=1., timebound = 10):
 #IMPLEMENT
@@ -94,8 +94,27 @@ def anytime_weighted_astar(initial_state, heur_fn, weight=1., timebound = 10):
   '''INPUT: a sokoban state that represents the start state and a timebound (number of seconds)'''
   '''OUTPUT: A goal state (if a goal is found), else False'''
   '''implementation of anytime weighted astar algorithm'''
-
-  return False
+  # Set function wrapper
+  wrapped_fval_function = (lambda sN : fval_function(sN,weight))
+  # Initialize search engine
+  search_engine = SearchEngine("custom", "default");
+  search_engine.init_search(initState=initial_state, goal_fn=sokoban_goal_state, heur_fn=heur_fn, fval_function=wrapped_fval_function)
+  # Set return value
+  result_state = None
+  cost_bound = None
+  end_time = os.times()[0] + timebound
+  # Continue searching before time limit is reached
+  while os.times()[0] < end_time:
+    goal_state = search_engine.search(timebound=(end_time - os.times()[0]), costbound=cost_bound)[0]
+    if goal_state == False:
+      break
+    result_state = goal_state
+    # Update cost bound
+    cost_bound = (float("inf"), float("inf"), goal_state.gval + heur_fn(goal_state))
+    # Update weight
+    if weight > 1:
+      weight -= 1
+  return result_state
 
 def anytime_gbfs(initial_state, heur_fn, timebound = 10):
 #IMPLEMENT

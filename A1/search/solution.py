@@ -53,11 +53,20 @@ def trivial_heuristic(state):
         count += 1
   return count
 
-# Deadlock: the box is in unsolvable position
-def heur_deadlock(state):
+def heur_alternate(state):
+#IMPLEMENT
+  '''a better heuristic'''
+  '''INPUT: a sokoban state'''
+  '''OUTPUT: a numeric value that serves as an estimate of the distance of the state to the goal.'''
+  #heur_manhattan_distance has flaws.
+  #Write a heuristic function that improves upon heur_manhattan_distance to estimate distance between the current state and the goal.
+  #Your function should return a numeric value for the estimate of the distance to the goal.
   unstored_box = list(state.boxes - state.storage)
-  unboxed_storage = list(state.storage - state.boxes)
+  stored_box = list(state.boxes & state.storage)
+  hval = 0
   for box in unstored_box:
+    unboxed_storage = list(state.storage - state.boxes)
+    # Deadlock Check
     # Corner: formed by wall
     if box in [(0, 0), (0, state.height - 1), (state.width - 1, 0), (state.width - 1, state.height - 1)]:
       return float("inf")
@@ -70,17 +79,32 @@ def heur_deadlock(state):
       return float("inf")
     if (box[1] == 0 or box[1] == state.height - 1) and (not any(box[1] == storage[1] for storage in unboxed_storage)):
       return float("inf")
-  return 0
+    # Edge: two consecutive boxes along a edge
+    
+    # Compute the minimum distance between a box to an occupied storage
+    min_dist_bs = float("inf")
+    for storage in unboxed_storage:
+      dist_bs = abs(box[0] - storage[0]) + abs(box[1] - storage[1])
+      if dist_bs < min_dist_bs:
+        min_dist_bs = dist_bs
+    
+    # Compute the minimum distance between a robot to a box
+    min_dist_rb = float("inf")
+    for robot in state.robots:
+      dist_rb = abs(box[0] - robot[0]) + abs(box[1] - robot[1])
+      if dist_rb < min_dist_rb:
+        min_dist_rb = dist_rb
 
-def heur_alternate(state):
-#IMPLEMENT
-    '''a better heuristic'''
-    '''INPUT: a sokoban state'''
-    '''OUTPUT: a numeric value that serves as an estimate of the distance of the state to the goal.'''
-    #heur_manhattan_distance has flaws.
-    #Write a heuristic function that improves upon heur_manhattan_distance to estimate distance between the current state and the goal.
-    #Your function should return a numeric value for the estimate of the distance to the goal.
-    return max(trivial_heuristic(state), heur_deadlock(state))
+    # Compute total numbers of obstacles around a box
+    obstacle_count = 0
+    box_surround = [(box[0] + 1, box[1]), (box[0] - 1, box[1]), (box[0], box[1] + 1), (box[0], box[1] - 1) \
+      , (box[0] + 1, box[1] + 1), (box[0] + 1, box[1] - 1), (box[0] - 1, box[1] + 1), (box[0] - 1, box[1] + 1)]
+    for spot in box_surround:
+      if spot in state.obstacles:
+        obstacle_count += 1
+    
+    hval += min_dist_bs + min_dist_rb + obstacle_count
+  return hval
 
 def heur_zero(state):
     '''Zero Heuristic can be used to make A* search perform uniform cost search'''

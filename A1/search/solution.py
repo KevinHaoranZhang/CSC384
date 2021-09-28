@@ -61,26 +61,28 @@ def heur_alternate(state):
   #heur_manhattan_distance has flaws.
   #Write a heuristic function that improves upon heur_manhattan_distance to estimate distance between the current state and the goal.
   #Your function should return a numeric value for the estimate of the distance to the goal.
-  unstored_box = list(state.boxes - state.storage)
-  stored_box = list(state.boxes & state.storage)
+  unstored_box = set(state.boxes - state.storage)
+  unboxed_storage = set(state.storage - state.boxes)
   hval = 0
   for box in unstored_box:
-    unboxed_storage = list(state.storage - state.boxes)
     # Deadlock Check
-    # Corner: formed by wall
-    if box in [(0, 0), (0, state.height - 1), (state.width - 1, 0), (state.width - 1, state.height - 1)]:
-      return float("inf")
-    # Corner: formed by obstacles
-    if ((box[0] - 1, box[1]) in state.obstacles or (box[0] + 1, box[1]) in state.obstacles) and \
-      ((box[0], box[1] - 1) in state.obstacles or (box[0], box[1] + 1) in state.obstacles):
+    # Corner: formed by wall or obstacles
+    if ((box[0] - 1, box[1]) in state.obstacles or (box[0] + 1, box[1]) in state.obstacles \
+      or box[0] == 0 or box[0] == state.width - 1) and \
+      ((box[0], box[1] - 1) in state.obstacles or (box[0], box[1] + 1) in state.obstacles \
+      or box[1] == 0 or box[1] == state.height - 1):
       return float("inf")
     # Edge: no storage along the chosen edge
-    if (box[0] == 0 or box[0] == state.width - 1) and (not any(box[0] == storage[0] for storage in unboxed_storage)):
+    if ((box[0] == 0 or box[0] == state.width - 1) and (not any(box[0] == storage[0] for storage in unboxed_storage))):
       return float("inf")
     if (box[1] == 0 or box[1] == state.height - 1) and (not any(box[1] == storage[1] for storage in unboxed_storage)):
       return float("inf")
     # Edge: two consecutive boxes along a edge
-    
+    if (box[0] == 0 or box[0] == state.width - 1) and ((box[0], box[1] + 1) in unstored_box or (box[0], box[1] - 1) in unstored_box):
+      return float("inf")
+    if (box[1] == 0 or box[1] == state.height - 1) and ((box[0] + 1, box[1]) in unstored_box or (box[0] - 1, box[1]) in unstored_box):
+      return float("inf")
+
     # Compute the minimum distance between a box to an occupied storage
     min_dist_bs = float("inf")
     for storage in unboxed_storage:

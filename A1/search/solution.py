@@ -53,6 +53,21 @@ def trivial_heuristic(state):
         count += 1
   return count
 
+def deadlock_detection(box, state):
+  # Corner: formed by wall or obstacles
+  if (box[0] <= 0 or box[0] >= state.width - 1 or \
+    (box[0] - 1, box[1]) in state.obstacles or (box[0] + 1, box[1]) in state.obstacles) and \
+    (box[1] <= 0 or box[1] >= state.height - 1 or \
+    (box[0], box[1] - 1) in state.obstacles or (box[0], box[1] + 1) in state.obstacles):
+      return True
+  # Edge: no storage along the chosen edge
+  if (box[0] <= 0 or box[0] >= state.width - 1) and (not any(box[0] == storage[0] for storage in state.storage) or ((box[0], box[1] + 1) in state.boxes or (box[0], box[1] - 1) in state.boxes)):
+    return True
+  if (box[1] <= 0 or box[1] >= state.height - 1) and (not any(box[1] == storage[1] for storage in state.storage) or ((box[0] + 1, box[1]) in state.boxes or (box[0] - 1, box[1]) in state.boxes)):
+    return True
+  return False
+
+prev_hval = None
 def heur_alternate(state):
 #IMPLEMENT
   '''a better heuristic'''
@@ -61,51 +76,38 @@ def heur_alternate(state):
   #heur_manhattan_distance has flaws.
   #Write a heuristic function that improves upon heur_manhattan_distance to estimate distance between the current state and the goal.
   #Your function should return a numeric value for the estimate of the distance to the goal.
-  unstored_box = set(state.boxes - state.storage)
-  unboxed_storage = set(state.storage - state.boxes)
+
+  global prev_hval
   hval = 0
+  unstored_box = set(state.boxes - state.storage)
+
+  # No box moved, use cached hval
+  if state.parent is not None and state.parent.boxes == state.boxes:
+    if prev_hval == float("inf"):
+      return float("inf")
+    hval = prev_hval
+    # Update the minimum distance between a robot to a box
+    for box in unstored_box:
+      dist_rb = min([abs(box[0] - robot[0]) + abs(box[1] - robot[1]) for robot in state.robots])
+      hval += dist_rb
+    return hval
+
+  prev_hval = 0
   for box in unstored_box:
     # Deadlock Check
-    # Corner: formed by wall or obstacles
-    if ((box[0] - 1, box[1]) in state.obstacles or (box[0] + 1, box[1]) in state.obstacles \
-      or box[0] == 0 or box[0] == state.width - 1) and \
-      ((box[0], box[1] - 1) in state.obstacles or (box[0], box[1] + 1) in state.obstacles \
-      or box[1] == 0 or box[1] == state.height - 1):
-      return float("inf")
-    # Edge: no storage along the chosen edge
-    if ((box[0] == 0 or box[0] == state.width - 1) and (not any(box[0] == storage[0] for storage in unboxed_storage))):
-      return float("inf")
-    if (box[1] == 0 or box[1] == state.height - 1) and (not any(box[1] == storage[1] for storage in unboxed_storage)):
-      return float("inf")
-    # Edge: two consecutive boxes along a edge
-    if (box[0] == 0 or box[0] == state.width - 1) and ((box[0], box[1] + 1) in unstored_box or (box[0], box[1] - 1) in unstored_box):
-      return float("inf")
-    if (box[1] == 0 or box[1] == state.height - 1) and ((box[0] + 1, box[1]) in unstored_box or (box[0] - 1, box[1]) in unstored_box):
+    if deadlock_detection(box, state):
+      prev_hval = float("inf")
       return float("inf")
 
-    # Compute the minimum distance between a box to an occupied storage
-    min_dist_bs = float("inf")
-    for storage in unboxed_storage:
-      dist_bs = abs(box[0] - storage[0]) + abs(box[1] - storage[1])
-      if dist_bs < min_dist_bs:
-        min_dist_bs = dist_bs
+    # Compute the minimum distance between a box to a storage
+    dist_bs = min([abs(box[0] - storage[0]) + abs(box[1] - storage[1]) for storage in state.storage])
     
     # Compute the minimum distance between a robot to a box
-    min_dist_rb = float("inf")
-    for robot in state.robots:
-      dist_rb = abs(box[0] - robot[0]) + abs(box[1] - robot[1])
-      if dist_rb < min_dist_rb:
-        min_dist_rb = dist_rb
+    dist_rb = min([abs(box[0] - robot[0]) + abs(box[1] - robot[1]) for robot in state.robots])
 
-    # Compute total numbers of obstacles around a box
-    obstacle_count = 0
-    box_surround = [(box[0] + 1, box[1]), (box[0] - 1, box[1]), (box[0], box[1] + 1), (box[0], box[1] - 1) \
-      , (box[0] + 1, box[1] + 1), (box[0] + 1, box[1] - 1), (box[0] - 1, box[1] + 1), (box[0] - 1, box[1] + 1)]
-    for spot in box_surround:
-      if spot in state.obstacles:
-        obstacle_count += 1
-    
-    hval += min_dist_bs + min_dist_rb + obstacle_count
+    # Cached current hval for future reuse
+    prev_hval += dist_bs
+    hval += dist_bs + dist_rb
   return hval
 
 def heur_zero(state):

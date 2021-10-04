@@ -1,1 +1,12 @@
 /** WRITE YOUR TIPS IN THIS FILE **/
+1. Consider both storage and robots.
+In addition to Manhattan distance between a box and a storage,
+the distance between a box and a robot should be also added to the goal.
+
+2. Deadlock detection is the most critical and time-consuming step.
+Sometimes a move can lead to unsolvable state, such as trapped in the corner,
+these moves must be avoided via deadlock detection.
+
+3. Use cache to improve efficiency.
+If no box was moved, there is no need for checking deadlock again, 
+the goal can be retrieved from what was previously computed in the cache.

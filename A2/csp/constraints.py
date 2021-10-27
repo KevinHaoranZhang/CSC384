@@ -1,4 +1,5 @@
 from csp import Constraint, Variable
+import math
 import util
 
 class TableConstraint(Constraint):
@@ -119,8 +120,13 @@ class QueensTableConstraint(TableConstraint):
     #inside of this class body. You must not change
     #the existing function signatures.
     def __init__(self, name, qi, qj, i, j):
-        self._name = "Queen_" + name
-        util.raiseNotDefined()
+        satisfyingAssignments = []
+        diag_val = abs(i - j)
+        for qi_val in qi.domain():
+            for qj_val in qj.domain():
+                if qj_val != qi_val - diag_val and qj_val != qi_val and qj_val != qi_val + diag_val:
+                    satisfyingAssignments.append([qi_val, qj_val])
+        TableConstraint.__init__(self, name, [qi, qj], satisfyingAssignments)
 
 class NeqConstraint(Constraint):
     '''Neq constraint between two variables'''

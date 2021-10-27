@@ -132,19 +132,22 @@ def sudokuCSP(initial_sudoku_board, model='neq'):
     #Set up the constraints
     #row constraints
     constraint_list = []
+    id = 0
 
     for row in var_array:
         if model == 'neq':
             constraint_list.extend(post_all_pairs(row))
         elif model == 'alldiff':
-            util.raiseNotDefined()
+            constraint_list.append(AllDiffConstraint(f"row_{id}", list(row)))
+            id += 1
 
     for colj in range(len(var_array[0])):
         scope = list(map(lambda row: row[colj], var_array))
         if model == 'neq':
             constraint_list.extend(post_all_pairs(scope))
         elif model == 'alldiff':
-            util.raiseNotDefined()
+            constraint_list.append(AllDiffConstraint(f"col_{id}", scope))
+            id += 1
 
     for i in [0, 3, 6]:
         for j in [0, 3, 6]:
@@ -156,7 +159,8 @@ def sudokuCSP(initial_sudoku_board, model='neq'):
             if model == 'neq':
                 constraint_list.extend(post_all_pairs(scope))
             elif model == 'alldiff':
-                util.raiseNotDefined()
+                constraint_list.append(AllDiffConstraint(f"square_{id}", scope))
+                id += 1
 
     vars = [var for row in var_array for var in row]
     return CSP("Sudoku", vars, constraint_list)

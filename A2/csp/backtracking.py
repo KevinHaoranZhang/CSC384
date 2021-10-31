@@ -217,14 +217,15 @@ def GacEnforce(constraints, csp, reasonVar, reasonVal):
     while not len(cnstrs) == 0:
         cnstr = cnstrs.pop()
         for var in cnstr.scope():
-            for val in var.curDomain():
-                if not cnstr.hasSupport(var, val):
-                    var.pruneValue(val, reasonVar, reasonVal)
-                    if var.curDomainSize() == 0:
-                        return "DWO"
-                    for recheck in csp.constraintsOf(var):
-                        if recheck != cnstr and not recheck in cnstrs:
-                            cnstrs.append(recheck)
+            if not var.isAssigned():
+                for val in var.curDomain():
+                    if not cnstr.hasSupport(var, val):
+                        var.pruneValue(val, reasonVar, reasonVal)
+                        if var.curDomainSize() == 0:
+                            return "DWO"
+                        for recheck in csp.constraintsOf(var):
+                            if recheck != cnstr and not recheck in cnstrs:
+                                cnstrs.append(recheck)
     return "OK"
 
 def GAC(unAssignedVars, csp, allSolutions, trace):

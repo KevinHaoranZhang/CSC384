@@ -1,6 +1,7 @@
 from csp import Constraint, Variable, CSP
 from constraints import *
 from backtracking import bt_search
+import copy
 
 ##################################################################
 ### NQUEENS
@@ -335,16 +336,69 @@ def solve_planes(planes_problem, algo, allsolns,
     '''
 
     #BUILD your CSP here and store it in the varable csp
-    util.raiseNotDefined()
 
-    csp = None #set to to your CSP 
+    # A list used to initialzie csp problem
+    variable_list = list()
+    # A dictionary that maps plane to a list of variables
+    variable_dict = dict()
+
+    # Initialize variables
+    # Each plane has n variables, where n = # of valid flights it can fly
+    # Contraint 1 is satisfied during initialization
+    for plane in planes_problem.planes:
+        plane_domain = planes_problem._can_fly[plane] + ["idle"]
+        flight_id = 0
+        for flight in planes_problem._can_fly[plane]:
+            flight_id += 1
+            plane_variable = Variable(f"{plane}_{flight_id}", plane_domain)
+            variable_list.append(plane_variable)
+            if plane not in variable_dict:
+                variable_dict[plane] = [plane_variable]
+            else:
+                variable_dict[plane].append(plane_variable)
+
+    # Initialize constraints
+    constraint_list = list()
+    for plane in planes_problem.planes:
+        # Enforce constraint 2: valid initial flight.
+        constraint_list.append(ValidInitFlightsConstraint(plane, variable_dict[plane], planes_problem._flights_at_start[plane]))
+        # Enforce constraint 3: valid flights sequence.
+        constraint_list.append(ValidFlightsSeqConstraint(plane, variable_dict[plane], planes_problem.can_follow))
+        # Enforce constraint 4: valid maintenance flights.
+        constraint_list.append(ValidMaintenanceConstraint(plane, variable_dict[plane], planes_problem.maintenance_flights, planes_problem.min_maintenance_frequency))
+
+    # Enforce constraint 5: all flights scheduled only once.
+    for flight in planes_problem.flights:
+        constraint_list.append(ValidAssignmentConstraint(flight, variable_list, flight))
+    csp = CSP("plane_scheduling", variable_list, constraint_list) #set to to your CSP 
     #invoke search with the passed parameters
     solutions, num_nodes = bt_search(algo, csp, variableHeuristic, allsolns, trace)
 
     #Convert each solution into a list of lists specifying a schedule
     #for each plane in the format described above.
+    return_sol = list()
+    for solution in solutions:
+        cur_plane = None
+        cur_list = []
+        cur_sol = []
+        for variable, val in solution:
+            var_plane = variable._name.split("_")[0]
+            if cur_plane != var_plane:
+                if len(cur_list) != 0:
+                    cur_sol.append(copy.deepcopy(cur_list))
+                cur_list = []
+                cur_plane = var_plane
+                cur_list.append(cur_plane)
+                if val != "idle":
+                    cur_list.append(val)
+            else:
+                if val != "idle":
+                    cur_list.append(val)
+        cur_sol.append(copy.deepcopy(cur_list))
+        return_sol.append(cur_sol)
 
     #then return a list containing all converted solutions
     #(i.e., a list of lists of lists)
+    return return_sol
 
 

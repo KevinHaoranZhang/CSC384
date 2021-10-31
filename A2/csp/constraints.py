@@ -307,3 +307,161 @@ class NValuesConstraint(Constraint):
                     satisfy_num += 1
                     break
         return satisfy_num >= self._lb and satisfy_num <= self._ub
+
+class ValidInitFlightsConstraint(Constraint):
+    def __init__(self, name, scope, valid_init_flights):
+        Constraint.__init__(self,name, scope)
+        self._name = "C2_ValidInitFlights_" + name
+        self._valid_init_flights = valid_init_flights
+
+    def check(self):
+        first_none_idle_flight = None
+        for v in self.scope():
+            if v.isAssigned() and v.getValue() != "idle":
+                first_none_idle_flight = v.getValue()
+        return first_none_idle_flight == None or first_none_idle_flight in self._valid_init_flights
+
+    def hasSupport(self, var, val):
+        if var not in self.scope():
+            return True
+        first_var = self.scope()[0]
+        # Check if the first variable is a valid initial flight
+        if first_var.isAssigned():
+            if first_var.getValue() in self._valid_init_flights:
+                return True
+            if first_var.getValue() != "idle":
+                return False
+        if first_var == var:
+            if val in self._valid_init_flights:
+                return True
+            if val != "idle":
+                return False
+        for cur_val in first_var.curDomain():
+            if cur_val in self._valid_init_flights:
+                return True
+        # Special case: all idle, i.e. no flights taken is also valid
+        all_idle = True
+        for cur_var in self.scope():
+            if "idle" not in cur_var.curDomain():
+                all_idle = False
+            if cur_var == var and val != "idle":
+                all_idle = False
+        return all_idle
+
+class ValidFlightsSeqConstraint(Constraint):
+    def __init__(self, name, scope, valid_flights_seq):
+        Constraint.__init__(self,name, scope)
+        self._name = "C3_ValidFlightsSeq_" + name
+        self._valid_flights_seq = valid_flights_seq
+
+    def check(self):
+        flight_list = list()
+        for var in self.scope():
+            if var.isAssigned() and var.getValue() != "idle":
+                flight_list.append(var.getValue())
+        for flight_index in range(0, len(flight_list) - 1):
+            if (flight_list[flight_index], flight_list[flight_index + 1]) not in self._valid_flights_seq:
+                return False
+        return True
+
+    def hasSupport(self, var, val):
+        if var not in self.scope():
+            return True
+        valid_seq = [False] * (len(self.scope()) - 1)
+        # Check all possible sequence, return true if all pairs have one
+        for var_index in range(0, len(self.scope()) - 1):
+            for first_val in self.scope()[var_index].curDomain():
+                for second_val in self.scope()[var_index + 1].curDomain():
+                    if var == self.scope()[var_index]:
+                        first_val = val
+                    if var == self.scope()[var_index + 1]:
+                        second_val = val
+                    if (first_val, second_val) in self._valid_flights_seq \
+                        or (first_val, second_val) == ("idle", "idle") or second_val == "idle":
+                        valid_seq[var_index] = True
+        for seq in valid_seq:
+            if seq == False:
+                return False
+        return True
+
+class ValidMaintenanceConstraint(Constraint):
+    def __init__(self, name, scope, maintenance_flights, min_maintenance_frequency):
+        Constraint.__init__(self,name, scope)
+        self._name = "C4_ValidMaintenance_" + name
+        self._maintenance_flights = maintenance_flights
+        self._min_maintenance_frequency = min_maintenance_frequency
+
+    def check(self):
+        flights_count = 0
+        for cur_var in self.scope():
+            if cur_var.isAssigned() and cur_var.getValue() != "idle" and cur_var.getValue() not in self._maintenance_flights:
+                flights_count += 1
+        if flights_count < self._min_maintenance_frequency:
+            return True
+        for var_index in range(0, len(self.scope()) - self._min_maintenance_frequency + 1):
+            flights_count = 0
+            for cur_window_index in range(0, self._min_maintenance_frequency):
+                cur_var = self.scope()[var_index + cur_window_index]
+                if cur_var.isAssigned() and cur_var.getValue() != "idle" and cur_var.getValue() not in self._maintenance_flights:
+                    flights_count += 1
+            if flights_count >= self._min_maintenance_frequency:
+                return False
+        return True
+
+    def hasSupport(self, var, val):
+        if var not in self.scope():
+            return True
+        if len(self.scope()) <= self._min_maintenance_frequency:
+            return True
+        # Track accumulated flight with no maintenance
+        # Clear when encouter a maintenance stop
+        flights_count = 0
+        for cur_var in self.scope():
+            if cur_var.isAssigned():
+                if cur_var.getValue() in self._maintenance_flights:
+                    flights_count = 0
+                elif cur_var.getValue() != "idle" and cur_var.getValue() not in self._maintenance_flights:
+                    flights_count += 1
+            elif cur_var == var:
+                if val in self._maintenance_flights:
+                    flights_count = 0
+                if val != "idle" and val not in self._maintenance_flights:
+                    flights_count += 1
+            elif not cur_var.isAssigned():
+                for cur_var_val in cur_var.curDomain():
+                    if cur_var_val in self._maintenance_flights:
+                        flights_count = 0
+            if flights_count >= self._min_maintenance_frequency:
+                return False
+        return True
+
+class ValidAssignmentConstraint(Constraint):
+    def __init__(self, name, scope, flight):
+        Constraint.__init__(self,name, scope)
+        self._name = "C5_ValidAssignment_" + name
+        self._flight = flight
+
+    def check(self):
+        flight_count = 0
+        for cur_var in self.scope():
+            if cur_var.isAssigned() and cur_var.getValue() != self._flight:
+                flight_count += 1
+        return flight_count == 1
+
+    def hasSupport(self, var, val):
+        flight_count = 0
+        for cur_var in self.scope():
+            if cur_var.isAssigned() and cur_var.getValue() == self._flight:
+                flight_count += 1
+        if val == self._flight:
+            flight_count += 1
+        if flight_count == 1:
+            return True
+        if flight_count > 1:
+            return False
+        for cur_var in self.scope():
+            if not cur_var.isAssigned() and cur_var != var:
+                for cur_var_val in cur_var.curDomain():
+                    if cur_var_val == self._flight:
+                        return True
+        return False

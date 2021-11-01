@@ -379,22 +379,22 @@ def solve_planes(planes_problem, algo, allsolns,
     return_sol = list()
     for solution in solutions:
         cur_plane = None
-        cur_list = []
+        cur_plane_list = []
         cur_sol = []
         for variable, val in solution:
             var_plane = variable._name.split("_")[0]
             if cur_plane != var_plane:
-                if len(cur_list) != 0:
-                    cur_sol.append(copy.deepcopy(cur_list))
-                cur_list = []
+                if len(cur_plane_list) != 0:
+                    cur_sol.append(copy.deepcopy(cur_plane_list))
+                cur_plane_list = []
                 cur_plane = var_plane
-                cur_list.append(cur_plane)
+                cur_plane_list.append(cur_plane)
                 if val != "idle":
-                    cur_list.append(val)
+                    cur_plane_list.append(val)
             else:
                 if val != "idle":
-                    cur_list.append(val)
-        cur_sol.append(copy.deepcopy(cur_list))
+                    cur_plane_list.append(val)
+        cur_sol.append(copy.deepcopy(cur_plane_list))
         return_sol.append(cur_sol)
 
     #then return a list containing all converted solutions

@@ -139,7 +139,7 @@ def sudokuCSP(initial_sudoku_board, model='neq'):
         if model == 'neq':
             constraint_list.extend(post_all_pairs(row))
         elif model == 'alldiff':
-            constraint_list.append(AllDiffConstraint(f"row_{id}", list(row)))
+            constraint_list.append(AllDiffConstraint("row_{}".format(id), list(row)))
             id += 1
 
     for colj in range(len(var_array[0])):
@@ -147,7 +147,7 @@ def sudokuCSP(initial_sudoku_board, model='neq'):
         if model == 'neq':
             constraint_list.extend(post_all_pairs(scope))
         elif model == 'alldiff':
-            constraint_list.append(AllDiffConstraint(f"col_{id}", scope))
+            constraint_list.append(AllDiffConstraint("col_{}".format(id), scope))
             id += 1
 
     for i in [0, 3, 6]:
@@ -160,7 +160,7 @@ def sudokuCSP(initial_sudoku_board, model='neq'):
             if model == 'neq':
                 constraint_list.extend(post_all_pairs(scope))
             elif model == 'alldiff':
-                constraint_list.append(AllDiffConstraint(f"square_{id}", scope))
+                constraint_list.append(AllDiffConstraint("square_{}".format(id), scope))
                 id += 1
 
     vars = [var for row in var_array for var in row]
@@ -350,7 +350,7 @@ def solve_planes(planes_problem, algo, allsolns,
         flight_id = 0
         for flight in planes_problem._can_fly[plane]:
             flight_id += 1
-            plane_variable = Variable(f"{plane}_{flight_id}", plane_domain)
+            plane_variable = Variable("{}_{}".format(plane, flight_id), plane_domain)
             variable_list.append(plane_variable)
             if plane not in variable_dict:
                 variable_dict[plane] = [plane_variable]

@@ -238,9 +238,20 @@ def betterEvaluationFunction(currentGameState):
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION:
+    Factors that impact the score:
+    1. food distnace -> negative impact
+    2. scrad time -> positive impact
+    3. ghost distnace -> negative impact
+    The strategy is to compute all min values for these factors, and sum them up with original score.
+    The weight for scrad time is larger since it is the best time to score.
     """
     "*** YOUR CODE HERE ***"
 
+    curPos = currentGameState.getPacmanPosition()
+    minFoodDistance = min([manhattanDistance(curPos, curFoodPos) for curFoodPos in currentGameState.getFood().asList()], default=0)
+    minGhostDistance = min([manhattanDistance(curPos, CurGhost.getPosition()) for CurGhost in currentGameState.getGhostStates()], default=0)
+    minScaredTime =  min([CurGhost.scaredTimer for CurGhost in currentGameState.getGhostStates()], default=0)
+    return - minFoodDistance + minScaredTime * 5 - 1 / (minGhostDistance + 1) + currentGameState.getScore()
 # Abbreviation
 better = betterEvaluationFunction

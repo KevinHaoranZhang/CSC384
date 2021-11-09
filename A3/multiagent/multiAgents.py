@@ -138,7 +138,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
         def DFMiniMax(state, agent_index, depth):
             best_move = None
             if state.isWin() or state.isLose() or (depth >= self.depth and agent_index % state.getNumAgents() == 0):
-                return best_move, self.evaluationFunction(state) 
+                return best_move, self.evaluationFunction(state)
             if agent_index % state.getNumAgents() == 0:
                 depth += 1
                 value = float("-inf")
@@ -208,7 +208,26 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def Expectimax(state, agent_index, depth):
+            best_move = None
+            if state.isWin() or state.isLose() or (depth >= self.depth and agent_index % state.getNumAgents() == 0):
+                return best_move, self.evaluationFunction(state)
+            if agent_index % state.getNumAgents() == 0:
+                depth += 1
+                value = float("-inf")
+            else:
+                value = 0
+            for move in state.getLegalActions(agent_index):
+                nxt_pos = state.generateSuccessor(agent_index, move)
+                nxt_val = Expectimax(nxt_pos, (agent_index + 1) % state.getNumAgents(), depth)[1]
+                if agent_index % state.getNumAgents() == 0 and value < nxt_val:
+                    value, best_move = nxt_val, move
+                if agent_index % state.getNumAgents() > 0:
+                    value = value + float(nxt_val / len(state.getLegalActions(agent_index)))
+            return best_move, value
+
+        best_move = Expectimax(gameState, self.index, 0)[0]
+        return best_move
 
 def betterEvaluationFunction(currentGameState):
     """

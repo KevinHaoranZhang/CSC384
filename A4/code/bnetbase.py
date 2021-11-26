@@ -350,7 +350,27 @@ def restrict_factor(f, var, value):
 def sum_out_variable(f, var):
     '''return a new factor that is the product of the factors in Factors
        followed by the suming out of Var'''
-    #IMPLEMENT
+    # Get scope from the factor
+    new_factor_scope = f.get_scope()
+    new_factor_scope.remove(var)
+    new_factor = Factor(f"F_SUM_{var.name}", new_factor_scope)
+
+    # Compute sums
+    def sum_out_variable_helper(f, var, new_factor, scope):
+        if len(scope) == 0:
+            sum = 0
+            for value in var.domain():
+                var.set_assignment(value)
+                sum += f.get_value_at_current_assignments()
+            new_factor.add_value_at_current_assignment(sum)
+        else:
+            for v in scope[0].domain():
+                scope[0].set_assignment(v)
+                sum_out_variable_helper(f, var, new_factor, scope[1:])
+
+    sum_out_variable_helper(f, var, new_factor, new_factor.get_scope())
+
+    return new_factor
 
 def normalize(nums):
     '''take as input a list of number and return a new list of numbers where

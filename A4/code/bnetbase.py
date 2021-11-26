@@ -297,7 +297,29 @@ class BN:
 
 def multiply_factors(Factors):
     '''return a new factor that is the product of the factors in Fators'''
-     #IMPLEMENT
+    new_factor_name = []
+    new_factor_scope = []
+    # Get name and scope from Factors
+    for factor in Factors:
+        new_factor_name.append(factor.name)
+        new_factor_scope.extend(factor.scope)
+    new_factor = Factor(f"F_{'*'.join(new_factor_name)}", set(new_factor_scope))
+
+    # Compute products
+    def multiply_factors_helper(Factors, new_factor, scope):
+        if len(scope) == 0:
+            product = 1
+            for factor in Factors:
+                product *= factor.get_value_at_current_assignments()
+            new_factor.add_value_at_current_assignment(product)
+        else:
+            for value in scope[0].domain():
+                scope[0].set_assignment(value)
+                multiply_factors_helper(Factors, new_factor, scope[1:])
+
+    multiply_factors_helper(Factors, new_factor, new_factor.get_scope())
+
+    return new_factor
 
 def restrict_factor(f, var, value):
     '''f is a factor, var is a Variable, and value is a value from var.domain.

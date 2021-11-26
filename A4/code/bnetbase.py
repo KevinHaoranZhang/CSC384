@@ -375,7 +375,10 @@ def sum_out_variable(f, var):
 def normalize(nums):
     '''take as input a list of number and return a new list of numbers where
     now the numbers sum to 1, i.e., normalize the input numbers'''    
-    #IMPLEMENT
+    aplha = sum(nums)
+    if aplha == 0:
+        return [0] * len(nums)
+    return [num / aplha for num in nums]
 
 ###Orderings
 def min_fill_ordering(Factors, QueryVar):

@@ -303,7 +303,7 @@ def multiply_factors(Factors):
     for factor in Factors:
         new_factor_name.append(factor.name)
         new_factor_scope.extend(factor.scope)
-    new_factor = Factor(f"F_{'*'.join(new_factor_name)}", set(new_factor_scope))
+    new_factor = Factor(f"F_MUL_{'*'.join(new_factor_name)}", set(new_factor_scope))
 
     # Compute products
     def multiply_factors_helper(Factors, new_factor, scope):
@@ -326,7 +326,26 @@ def restrict_factor(f, var, value):
     Return a new factor that is the restriction of f by this var = value.
     Don't change f! If f has only one variable its restriction yields a
     constant factor'''
-    #IMPLEMENT
+    # Get scope from the factor
+    new_factor_scope = f.get_scope()
+    new_factor_scope.remove(var)
+    new_factor = Factor(f"F_RES_{var.name}_{value}", new_factor_scope)
+
+    # Set current assignment
+    var.set_assignment(value)
+
+    # Compute products
+    def restrict_factor_helper(f, new_factor, scope):
+        if len(scope) == 0:
+            new_factor.add_value_at_current_assignment(f.get_value_at_current_assignments())
+        else:
+            for value in scope[0].domain():
+                scope[0].set_assignment(value)
+                restrict_factor_helper(f, new_factor, scope[1:])
+
+    restrict_factor_helper(f, new_factor, new_factor.get_scope())
+
+    return new_factor
 
 def sum_out_variable(f, var):
     '''return a new factor that is the product of the factors in Factors

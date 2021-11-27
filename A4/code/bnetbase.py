@@ -463,4 +463,24 @@ def VE(Net, QueryVar, EvidenceVars):
    mean that Pr(A='a'|B=1, C='c') = 0.5 Pr(A='a'|B=1, C='c') = 0.24
    Pr(A='a'|B=1, C='c') = 0.26
     '''
-    #IMPLEMENT
+    # Step 1: restrict factor in evidence
+    restrict_factors = []
+    for factor in Net.factors():
+        for evidence in EvidenceVars:
+            if evidence in factor.get_scope():
+                factor = restrict_factor(factor, evidence, evidence.get_evidence())
+        restrict_factors.append(factor)
+
+    # Step 2: elimiate remaining vars
+    for var in min_fill_ordering(restrict_factors, QueryVar):
+        remaining_factors = [factor for factor in restrict_factors if var in factor.get_scope()]
+        # Compute new factor
+        new_factor = sum_out_variable(multiply_factors(remaining_factors), var)
+        # Remove old factor
+        for factor in remaining_factors:
+            restrict_factors.remove(factor)
+        # Store new factor
+        restrict_factors.append(new_factor)
+
+    # Step 3: take product and normalize
+    return normalize(multiply_factors(restrict_factors).values)
